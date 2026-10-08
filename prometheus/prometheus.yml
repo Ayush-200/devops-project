@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'devops-demo-app'
+    metrics_path: /metrics
+    static_configs:
+      # `app` matches the Kubernetes pod label so the same dashboard works on both stacks.
+      - targets: ['app:3000']
+        labels:
+          app: devops-demo-app
+
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']

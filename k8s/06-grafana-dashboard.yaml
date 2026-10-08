@@ -1,0 +1,182 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-dashboard
+  namespace: monitoring
+data:
+  devops-demo.json: |
+    {
+      "uid": "devops-demo-overview",
+      "title": "OrderFlow - Store Overview",
+      "tags": ["devops", "demo"],
+      "timezone": "browser",
+      "schemaVersion": 39,
+      "refresh": "10s",
+      "time": { "from": "now-15m", "to": "now" },
+      "panels": [
+        {
+          "id": 1,
+          "type": "timeseries",
+          "title": "Request rate (req/s)",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(rate(http_requests_total[1m])) by (route)",
+              "legendFormat": "{{route}}"
+            }
+          ],
+          "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] }
+        },
+        {
+          "id": 2,
+          "type": "timeseries",
+          "title": "HTTP 5xx error rate (%)",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "100 * (sum(rate(http_requests_total{status_code=~\"5..\"}[1m])) or vector(0)) / clamp_min(sum(rate(http_requests_total[1m])), 0.0001)",
+              "legendFormat": "5xx %"
+            }
+          ],
+          "fieldConfig": { "defaults": { "unit": "percent", "max": 100, "min": 0 }, "overrides": [] }
+        },
+        {
+          "id": 3,
+          "type": "timeseries",
+          "title": "Latency p95 / p99 (s)",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 8 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))",
+              "legendFormat": "p95"
+            },
+            {
+              "refId": "B",
+              "expr": "histogram_quantile(0.99, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))",
+              "legendFormat": "p99"
+            }
+          ],
+          "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] }
+        },
+        {
+          "id": 4,
+          "type": "timeseries",
+          "title": "In-flight requests",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 8 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(http_requests_in_flight)",
+              "legendFormat": "in-flight"
+            }
+          ],
+          "fieldConfig": { "defaults": {}, "overrides": [] }
+        },
+        {
+          "id": 5,
+          "type": "timeseries",
+          "title": "App CPU usage (cores)",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 16 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(rate(process_cpu_seconds_total{app=\"devops-demo-app\"}[1m]))",
+              "legendFormat": "cpu"
+            }
+          ],
+          "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] }
+        },
+        {
+          "id": 6,
+          "type": "timeseries",
+          "title": "RSS memory (bytes)",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 16 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "process_resident_memory_bytes{app=\"devops-demo-app\"}",
+              "legendFormat": "rss"
+            }
+          ],
+          "fieldConfig": { "defaults": { "unit": "bytes" }, "overrides": [] }
+        },
+        {
+          "id": 7,
+          "type": "timeseries",
+          "title": "Orders placed (per second, by status)",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 24 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(rate(orders_total[1m])) by (status)",
+              "legendFormat": "{{status}}"
+            }
+          ],
+          "fieldConfig": { "defaults": { "unit": "ops" }, "overrides": [] }
+        },
+        {
+          "id": 8,
+          "type": "timeseries",
+          "title": "Payment failure rate (% of attempted payments)",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 24 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "100 * sum(rate(payment_failures_total[1m])) / clamp_min(sum(rate(orders_total{status=~\"confirmed|payment_failed\"}[1m])), 0.0001)",
+              "legendFormat": "payment failures"
+            },
+            {
+              "refId": "B",
+              "expr": "payment_failure_rate * 100",
+              "legendFormat": "configured failure rate"
+            }
+          ],
+          "fieldConfig": { "defaults": { "unit": "percent", "min": 0 }, "overrides": [] }
+        },
+        {
+          "id": 9,
+          "type": "timeseries",
+          "title": "Inventory units in stock",
+          "gridPos": { "h": 8, "w": 12, "x": 0, "y": 32 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "sum(inventory_units) by (product)",
+              "legendFormat": "{{product}}"
+            }
+          ],
+          "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] }
+        },
+        {
+          "id": 10,
+          "type": "timeseries",
+          "title": "Revenue collected",
+          "gridPos": { "h": 8, "w": 12, "x": 12, "y": 32 },
+          "datasource": { "type": "prometheus", "uid": "prometheus" },
+          "targets": [
+            {
+              "refId": "A",
+              "expr": "revenue_collected",
+              "legendFormat": "revenue"
+            }
+          ],
+          "fieldConfig": { "defaults": { "unit": "currencyINR" }, "overrides": [] }
+        }
+      ],
+      "annotations": { "list": [] },
+      "editable": true,
+      "graphTooltip": 1,
+      "style": "dark"
+    }
